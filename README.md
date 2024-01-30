@@ -1,82 +1,104 @@
-**Підготовка інфраструктурного репозиторію для створення GKE кластеру.**
+- **Creating initial IAC (Infrastructure as Code) code.**  
+- **Testing and estimating infrastructure costs.**  
+- **Infrastructure deployment.**  
+- **Checking operability.**  
+- **Additional settings.**  
 
-Завдання включає етапи:
+------
 
-Створення початкового коду IAC.
-Тестування та оцінка затрат на інфраструктуру.
-Розгортання інфраструктури.
-Перевірка працездатності.
-Додаткові налаштування.
-Почніть зі створення нового репозиторію.
+- **Creating Initial IAC Code:**
+  - Initialize GCP configuration:
+    ```bash
+    gcloud init
+    ```
+  - List authenticated accounts:
+    ```bash
+    gcloud auth list
+    ```
+  - Display Google Cloud SDK information:
+    ```bash
+    gcloud info
+    ```
 
-Створіть каталог для файлів Terraform і створіть наступні файли: main.tf, variables.tf і vars.tfvars.
+- **In the `main.tf` file, add the following code block:**
+  - This block creates a GKE cluster module with specified settings:
+    ```hcl
+    module "gke_cluster" {
+      source         = "github.com/vit-um/tf-google-gke-cluster"
+      GOOGLE_REGION  = var.GOOGLE_REGION
+      GOOGLE_PROJECT = var.GOOGLE_PROJECT
+      GKE_NUM_NODES  = 2
+    }
+    ```
 
-У файлі main.tf додайте наступний блок коду для створення коду на базі модуля tf-google-gke-cluster:
+- **The `vars.tfvars` file stores sensitive Terraform configurations as variables and will be excluded in `.gitignore`.**
 
+  - Example variable definition in `variables.tf`:
+    ```hcl
+    variable "GOOGLE_PROJECT" {
+      type        = string
+      default     = "smiling-rhythm-404620"
+      description = "GCP project to use"
+    }
+    ```
 
-```console
-module "gke_cluster" {
-  source         = "github.com/<ВАШ-РЕПОЗИТОРІЙ>/tf-google-gke-cluster"
-  GOOGLE_REGION  = var.GOOGLE_REGION
-  GOOGLE_PROJECT = var.GOOGLE_PROJECT
-  GKE_NUM_NODES  = 2
-}
-```
-  
-У файлі variables.tf визначте потрібні вам змінні, такі як GOOGLE_REGION, GOOGLE_PROJECT і GKE_NUM_NODES.
+- **Testing and Operational Check:**
+  - Initialize Terraform:
+    ```bash
+    tf init
+    ```
+  - Format Terraform files:
+    ```bash
+    tf fmt
+    ```
+  - Validate Terraform configuration:
+    ```bash
+    tf validate
+    ```
+  - Log in to Google Cloud:
+    ```bash
+    gcloud auth login
+    ```
+  - Use default login for applications:
+    ```bash
+    gcloud auth application-default login
+    ```
+  - Plan deployment with specific variables:
+    ```bash
+    tf plan -var-file=vars.tfvars
+    ```
 
-У файлі vars.tfvars встановіть значення для змінних, які ви визначили у файлі variables.tf.
+- **Infrastructure Cost Estimation:**
+  - Estimate costs with Infracost:
+    ```bash
+    infracost breakdown --path .
+    ```
 
-У cloud shell терміналі перейдіть до директорії, де знаходяться ваші файли Terraform, і запустіть terraform init, щоб ініціалізувати проєкт.
+- **Deploying Infrastructure:**
+  - Apply Terraform configuration with variable file:
+    ```bash
+    tf apply -var-file=vars.tfvars
+    ```
 
-Запустіть terraform fmt. Це відформатує ваш код Terraform, щоб переконатися, що він є послідовним і легко читається.
+- **Operational Check:**
+  - Show Terraform state:
+    ```bash
+    terraform show 
+    ```
 
-Запустіть terraform validate у терміналі, щоб перевірити синтаксис і конфігурацію ваших файлів Terraform. Це допоможе вам виявити будь-які помилки або проблеми перед тим, як застосовувати зміни до вашої інфраструктури.
+- **Additional Settings:**
+  - Set up Terraform to use Google Cloud Storage as the backend:
+    ```hcl
+    terraform {
+      backend "gcs" {
+        bucket = "cipgen"
+        prefix = "terraform/state"
+      }
+    }
+    ```
 
-Якщо потрібно, додайте більше змінних до файлу variables.tf.
-
-Запустіть terraform plan у терміналі, щоб згенерувати план інфраструктури. Це покаже вам, які зміни Terraform внесе в інфраструктуру на основі написаного вами коду.
-
-У терміналі перейдіть до каталогу, де знаходяться файли Terraform, і запустіть infracost, щоб проаналізувати конфігурацію Terraform і оцінити вартість змін у вашій інфраструктурі.
-
-Якщо план виглядає добре, запустіть terraform apply, щоб застосувати зміни до вашої хмарної інфраструктури.
-
-Після застосування змін запустіть terraform show, щоб переглянути стан інфраструктури. Це допоможе вам переконатися, що інфраструктура правильно налаштована і працює належним чином.
-
-Після перевірки працездатності інфраструктури запустіть terraform destroy, щоб видалити всі створені ресурси.
-
-У Google Cloud Console перейдіть до розділу Cloud Storage і створіть новий bucket для зберігання вашого стану Terraform.
-
-У файлі конфігурації Terraform (main.tf) додайте наступний код, щоб налаштувати бекенд на використання Google Cloud Storage:
-
-```console
-terraform {
-  backend "gcs" {
-    bucket = "your-bucket-name"
-    prefix = "terraform/state"
-  }
-}
-  ```
-Замініть your-bucket-name на ім'я вашого сховища, яке ви створили на кроці 1.
-
-У терміналі перейдіть до каталогу, де знаходяться ваші файли Terraform, і запустіть terraform init. Це ініціалізує бекенд і налаштує його на використання Google Cloud Storage.
-
-Після того, як бекенд налаштовано, ви можете застосувати зміни до вашої інфраструктури, як зазвичай, запустивши terraform apply. Стан Terraform буде збережено у хмарному сховищі Google, яке ви створили на кроці 1.
-
-Після застосування змін ви можете перевірити стан ваших ресурсів у Google Cloud Console. Переконайтеся, що ваша інфраструктура працює належним чином.
-
-Якщо вам потрібно видалити інфраструктуру, ви можете запустити terraform destroy. При цьому будуть видалені всі ресурси, створені тераформою, і всі пов'язані з ними дані.
-
-Якщо вам більше не потрібно використовувати GCS для зберігання стану Terraform, ви можете видалити ts.state файл.
-
-Крім того, при роботі з Terraform state важливо забезпечити належний контроль і моніторинг доступу до нього. Як ми вже обговорювали раніше, Terraform State можна зберігати віддалено, що може зробити його більш безпечним і простим в управлінні. Однак, важливо забезпечити належний контроль доступу, щоб запобігти несанкціонованому доступу або зміні стану.
-
-Важливо зазначити, що стейт Terraform може містити конфіденційну інформацію, таку як паролі, ключі доступу та інші облікові дані. Цією інформацією слід ретельно керувати і захищати, щоб запобігти несанкціонованому доступу або витоку.
-
-Конфіденційні дані повинні надійно зберігатися в сховищі ключів або іншому захищеному сховищі, а доступ до них повинен надаватися Terraform за допомогою відповідних методів, таких як змінні середовища або інтеграція зі сховищем ключів.
-
-Вживаючи належних заходів для захисту ваших конфіденційних даних і контролю доступу до вашого стану в Terraform, ви можете забезпечити безпеку і надійність вашої інфраструктури.
-
-Збережіть результати роботи у репозиторії. Зверніть увагу на файли які не слід додавати у публічний репозиторій.
-
-Відповідь: посилання на репозиторій
+- **Destroy Cluster:**
+  - Remove all resources created by Terraform:
+    ```bash
+    tf destroy -var-file=vars.tfvars
+    ```
